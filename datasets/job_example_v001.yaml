@@ -1,0 +1,29 @@
+hda_path: "../../HoudiniProjects/SyntheticWorldEngine/hda/sop_IntersectGenerator.1.3.hda"
+
+sampling:
+  method: lhs
+  count: 300
+  seed: 12345
+
+  parameters:
+    - name: NumArms
+      range: [3, 5]
+
+    - name: WidthSeed
+      range: [0, 600]
+
+    - name: ArmSeed
+      range: [0, 500]
+
+    - name: ParkWeight
+      range: [0, .5]
+
+    - name: RoadLength
+      range: [30, 70]
+
+fixed_parameters:
+  MinLaneWidth: 3.5
+  MaxLaneWidth: 6
+  Lane3Weight: .2
+  Lane4Weight: .2
+  

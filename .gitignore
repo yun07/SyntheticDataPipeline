@@ -1,0 +1,129 @@
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment configuration
+pipeline/scripts/env.yaml
+
+# ============================================================
+# Generated data / outputs
+# ============================================================
+
+# Dataset outputs
+datasets/*/rgb/
+datasets/*/semantic/
+datasets/*/depth/
+datasets/*/coco/
+datasets/*/metadata/
+datasets/*/outputs/
+
+# General generated output directories
+outputs/
+output/
+renders/
+render/
+generated/
+results/
+
+# Training outputs
+checkpoints/
+runs/
+wandb/
+tensorboard/
+
+# Large generated files
+*.png
+*.jpg
+*.jpeg
+*.exr
+*.hdr
+
+# NOTE:
+# Review the rules above before committing if any source/example
+# images are intentionally part of the repository.
+
+# ============================================================
+# Unreal Engine
+# ============================================================
+
+# Unreal generated/cache directories
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Visual Studio / Rider
+.vs/
+.vscode/
+.idea/
+
+# Unreal build artifacts
+Build/
+Builds/
+
+# ============================================================
+# Houdini
+# ============================================================
+
+# Houdini generated/cache files
+*.hiplc
+*.hipnc
+*.sim
+*.simdata
+*.bgeo.sc
+*.vdb
+
+# Houdini cache directories
+.cache/
+geo/
+flipbook/
+
+# ============================================================
+# OS
+# ============================================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# ============================================================
+# Logs
+# ============================================================
+
+*.log
+logs/
+
+# ============================================================
+# Temporary files
+# ============================================================
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo

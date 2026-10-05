@@ -1,0 +1,43 @@
+# Synthetic Data Pipeline
+
+#
+
+# Python dependencies will be pinned here after auditing
+
+# the pipeline scripts and UnrealPython scripts.
+
+#
+
+# The final requirements file should be generated from
+
+# the actual imports used by:
+
+#
+
+# - orchestra.py
+
+# - generate_samples.py
+
+# - coco_generator.py
+
+# - segformer_finetune.py
+
+# - segformer_visualise.py
+
+# - json2jpg.py
+
+# - rpm.py
+
+# - ue_bridge.py
+
+# - pipeline/scripts/UnrealPython/*
+
+#
+
+# NOTE:
+
+# Unreal Engine Python dependencies and Houdini Python
+
+# dependencies are environment-specific and should not
+
+# automatically be installed from this file.
