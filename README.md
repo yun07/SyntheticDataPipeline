@@ -26,7 +26,9 @@ Houdini Procedural Generation
         Evaluation
 ```
 
-The project is designed as a technical demonstration of a controllable synthetic-data workflow.
+The project demonstrates an end-to-end synthetic-data workflow with explicit scene parameters, automated rendering, semantic labelling, dataset generation and downstream model evaluation.
+
+The goal is **controllable and reproducible dataset generation**, rather than state-of-the-art model performance.
 
 ---
 
@@ -66,6 +68,53 @@ SyntheticDataPipeline/
 
 ---
 
+## Pipeline
+
+The main workflow is:
+
+1. Define a dataset-generation job in YAML.
+2. Generate parameterised samples from the configured ranges.
+3. Feed the generated parameters into Unreal / Houdini Engine.
+4. Generate procedural scenes.
+5. Render RGB and semantic outputs.
+6. Convert semantic masks into COCO-style annotations.
+7. Train a SegFormer semantic-segmentation model.
+8. Evaluate the model using mean Intersection over Union (mIoU).
+9. Generate visual comparisons between RGB, ground truth and predictions.
+
+The main orchestration entry point is:
+
+```text
+pipeline/scripts/orchestra.py
+```
+
+Individual scripts can also be executed independently where appropriate.
+
+---
+
+## Sampling
+
+`generate_samples.py` supports several sampling strategies:
+
+```text
+grid
+random
+lhs
+sobol
+```
+
+The sampling configuration is provided through YAML.
+
+Example:
+
+```text
+datasets/job_example_v001.yaml
+```
+
+The generated dataset does **not** need to live inside the repository. The dataset/output location is derived from the supplied job configuration and can be provided from outside the repository.
+
+---
+
 ## Unreal Engine Setup
 
 Open the Unreal project and make sure the following plugins are enabled:
@@ -87,123 +136,200 @@ This setting is required for the intended automated pipeline workflow.
 
 ---
 
-## Main Entry Point
-
-The pipeline is orchestrated through:
-
-```text
-pipeline/scripts/orchestra.py
-```
-
-The individual Python scripts can also be run independently where appropriate.
-
-The dataset/input location is configurable, so the generated dataset does not need to live inside the repository.
-
----
-
-## Configuration
-
-Example configuration:
-
-```text
-datasets/job_example_v001.yaml
-```
-
-The configuration defines the parameters used for a dataset-generation job.
-
-The repository contains an example configuration rather than a generated dataset.
-
----
-
-## Environment
-
-The project uses:
-
-* Python
-* Unreal Engine
-* Houdini
-* Houdini Engine for Unreal
-* NVIDIA GPU hardware for the rendering / ML workflow
-
-Exact software versions and setup requirements will be documented as the repository is finalised.
-
----
-
-## Houdini
-
-The project includes a Houdini Digital Asset used for procedural environment generation.
-
-The HDA is intended to provide controllable scene variation which can then be consumed by Unreal Engine through Houdini Engine.
-
----
-
-## Unreal Engine
+## Unreal Project
 
 The Unreal project provides the rendering and semantic-data generation stage.
 
-The project uses Unreal functionality including:
+It uses:
 
 * Scene Capture
 * Movie Render Queue / automated rendering
 * Custom Stencil / semantic rendering
 * Procedural scene assembly
-* Python automation
+* Unreal Python automation
+
+The project also contains the Unreal assets required by the example scene and capture workflow.
+
+### External Assets
 
 Some assets used by the project originate from external Unreal Marketplace downloads and are **not redistributed in this repository**.
 
-When reproducing the semantic dataset, the required vehicle Static Mesh and Material configuration should be used because asset/material configuration affects the resulting semantic stencil output.
+The exact vehicle Static Mesh and Material configuration affects the semantic stencil output. When reproducing the example dataset, an equivalent compatible asset/material setup may therefore be required.
+
+Third-party assets remain subject to their original licences.
+
+---
+
+## Houdini
+
+The repository includes a Houdini Digital Asset:
+
+```text
+HDA/sop_IntersectGenerator.1.3.hda
+```
+
+The HDA generates controllable procedural intersection environments which are consumed by Unreal Engine through Houdini Engine.
+
+The scene variation is driven by parameters such as road dimensions, intersection configuration and random seeds.
 
 ---
 
 ## Python Pipeline
 
-The Python pipeline contains separate stages for tasks including:
+The Python pipeline is divided into independently executable components:
 
-* Pipeline orchestration
-* Sample generation
-* Unreal communication
-* Dataset / COCO generation
-* Image conversion
-* SegFormer training
-* Visualisation
-* Resource checking
-* Pipeline status handling
+| Script                   | Purpose                                      |
+| ------------------------ | -------------------------------------------- |
+| `orchestra.py`           | Main pipeline orchestration                  |
+| `generate_samples.py`    | Parameter sampling and sample generation     |
+| `ue_bridge.py`           | Unreal communication / pipeline bridge       |
+| `rpm.py`                 | Unreal process and render-process management |
+| `coco_generator.py`      | Semantic mask → COCO annotations             |
+| `segformer_finetune.py`  | SegFormer training and evaluation            |
+| `segformer_visualise.py` | Prediction / ground-truth visualisation      |
+| `check_resources.py`     | Resource checks                              |
+| `status_check.py`        | Pipeline status handling                     |
+| `UnrealPython/`          | Unreal-side Python utilities                 |
 
-The scripts are intentionally kept as independently executable components where practical.
+The components are intentionally kept relatively independent so that individual stages can be tested or executed without requiring the entire pipeline.
+
+---
+
+## Python Environment
+
+Python **3.10+** is recommended.
+
+Install the direct Python dependencies with:
+
+```powershell
+pip install -r requirements.txt
+```
+
+### PyTorch / CUDA
+
+PyTorch is intentionally not pinned to a specific version in `requirements.txt`.
+
+Install the PyTorch build appropriate for the target NVIDIA / CUDA environment before running the ML stage.
+
+The Unreal and Houdini stages also depend on their respective application installations and plugins.
 
 ---
 
 ## Machine Learning
 
-The generated dataset can be used for semantic-segmentation experiments with SegFormer.
+The generated semantic dataset can be used for semantic-segmentation experiments with **SegFormer**.
 
-The ML stage is included to demonstrate the downstream use of the generated synthetic data.
+The current implementation:
 
-The project is not intended to claim state-of-the-art model performance.
+* loads RGB images and semantic masks
+* creates a train / validation split
+* fine-tunes `nvidia/mit-b1`
+* calculates mean IoU
+* saves the best model
+* exports training / evaluation metrics
+* generates prediction visualisations
+
+The ML stage exists primarily to demonstrate the downstream use of the generated synthetic data.
+
+This project does **not** claim state-of-the-art model performance.
 
 ---
 
 ## Reproducibility
 
-The repository aims to make the pipeline understandable and reasonably reproducible.
+The repository is intended to make the complete workflow **understandable and reasonably reproducible**, rather than provide a completely self-contained one-click environment.
 
-However, the complete workflow depends on external software and assets that cannot be redistributed with the repository.
-
-These include:
+The following external dependencies are required:
 
 * Unreal Engine
 * Houdini
 * Houdini Engine for Unreal
-* External Marketplace assets
-* GPU / CUDA-dependent Python packages
+* NVIDIA GPU / compatible CUDA environment
+* External Unreal Marketplace assets where applicable
 
-The repository therefore separates project code and configuration from generated datasets and external assets.
+Generated datasets, renders, checkpoints and other large runtime outputs are intentionally excluded from the repository.
+
+Local environment configuration is also excluded:
+
+```text
+pipeline/scripts/env.yaml
+```
+
+An example configuration is provided as:
+
+```text
+pipeline/scripts/env.example.yaml
+```
+
+This allows machine-specific paths and settings to remain local.
+
+---
+
+## Generated Data
+
+Generated datasets are intentionally **not committed** to Git.
+
+Typical generated content includes:
+
+```text
+rgb/
+stencil/
+depth/
+coco_annotations.json
+runs/
+visualisations/
+```
+
+These outputs can be generated locally from the pipeline configuration.
+
+---
+
+## Current Scope
+
+This repository is a portfolio-scale technical demonstration of a controllable synthetic-data workflow.
+
+It demonstrates:
+
+```text
+Procedural Generation
+        ↓
+Parameter Sampling
+        ↓
+Automated Scene Assembly
+        ↓
+Automated Rendering
+        ↓
+Semantic Dataset Generation
+        ↓
+COCO Annotation
+        ↓
+Model Training
+        ↓
+Evaluation
+```
+
+The project does **not** currently implement closed-loop optimisation in which model evaluation automatically modifies the next sampling distribution.
+
+That is intentionally outside the current project scope.
+
+---
+
+## Known Limitations
+
+* Unreal Engine and Houdini are external application dependencies.
+* Some example assets are external Marketplace assets and cannot be redistributed.
+* Exact semantic output depends on the configured Unreal assets and materials.
+* GPU / CUDA compatibility affects the ML environment.
+* The ML stage is intended as downstream validation of the synthetic dataset rather than a research benchmark.
+* Generated datasets and training outputs are excluded from Git.
 
 ---
 
 ## Status
 
-This project is currently being finalised as a portfolio technical demonstration.
+**Portfolio project — finalised / repository cleanup complete.**
+
+The repository contains the core procedural generation, Unreal rendering, dataset generation, COCO conversion and SegFormer evaluation workflow.
 
 See:
 
@@ -211,7 +337,7 @@ See:
 PROJECT_STATUS.md
 ```
 
-for the current project status and known limitations.
+for the detailed project status and known limitations.
 
 ---
 

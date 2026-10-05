@@ -2,42 +2,22 @@
 
 #
 
-# Python dependencies will be pinned here after auditing
-
-# the pipeline scripts and UnrealPython scripts.
+# Python dependencies used by the pipeline scripts.
 
 #
 
-# The final requirements file should be generated from
+# PyTorch should be installed using the appropriate build for the
 
-# the actual imports used by:
+# target CUDA / GPU environment. It is intentionally not version-pinned
 
-#
+# here because the correct PyTorch package depends on the local system.
 
-# - orchestra.py
-
-# - generate_samples.py
-
-# - coco_generator.py
-
-# - segformer_finetune.py
-
-# - segformer_visualise.py
-
-# - json2jpg.py
-
-# - rpm.py
-
-# - ue_bridge.py
-
-# - pipeline/scripts/UnrealPython/*
-
-#
-
-# NOTE:
-
-# Unreal Engine Python dependencies and Houdini Python
-
-# dependencies are environment-specific and should not
-
-# automatically be installed from this file.
+PyYAML
+scipy
+numpy
+opencv-python
+Pillow
+matplotlib
+torch
+transformers
+accelerate

@@ -19,7 +19,7 @@ BASE_SCRIPT_DIR = Path(__file__).resolve().parent
 SCRIPTS_DIR = BASE_SCRIPT_DIR  
 
 # 🔒 Define heavy tasks (scripts that require a process lock)
-HEAVY_SCRIPTS = ["rpm.py", "segformer_run.py", "segformer_finetune.py"]
+HEAVY_SCRIPTS = ["rpm.py", "segformer_finetune.py"]
 # ==============================================================================
 
 
@@ -157,7 +157,7 @@ def process_job(yaml_path: str, root_dir: str):
     # --------------------------------------------------------------------------
     summary_flag = os.path.join(job_dir, "runs", "summary.json")
     if not os.path.exists(summary_flag):
-        segformer_script = "segformer_finetune.py" if os.path.exists(get_script_path("segformer_finetune.py")) else "segformer_run.py"
+        segformer_script = "segformer_finetune.py" 
         
         if not is_locked():
             log(f"⚡ [Async] No lock and missing summary.json, launching {segformer_script} ({job_name})")
