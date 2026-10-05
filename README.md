@@ -234,6 +234,16 @@ The ML stage exists primarily to demonstrate the downstream use of the generated
 This project does **not** claim state-of-the-art model performance.
 
 ---
+## Results
+
+A SegFormer semantic-segmentation model was fine-tuned on the generated synthetic dataset.
+
+mIoU: 0.8745
+Classes: 8
+Training images: ~300
+Model: SegFormer nvidia/mit-b1
+
+The result demonstrates that the generated synthetic data is sufficient for downstream semantic-segmentation training. The metric is included as a pipeline validation result rather than as a state-of-the-art benchmark.
 
 ## Reproducibility
 
