@@ -26,9 +26,39 @@ Houdini Procedural Generation
         Evaluation
 ```
 
-The project demonstrates an end-to-end synthetic-data workflow with explicit scene parameters, automated rendering, semantic labelling, dataset generation and downstream model evaluation.
+### Problem
 
-The goal is **controllable and reproducible dataset generation**, rather than state-of-the-art model performance.
+Specialised edge cases often require purpose-built procedural generators. However, generating a scenario is only one part of the workflow: automated rendering, semantic annotation, dataset export, and downstream model evaluation also need to be connected. Rebuilding these components for each new generator can duplicate engineering effort and require expertise across multiple disciplines.
+
+### Approach
+
+Designed an automated synthetic data pipeline that separates scenario generation from downstream data production. Developers can build specialised Houdini Digital Assets (HDAs) for configurable scenarios, while a shared pipeline connects Houdini Engine with Unreal Engine for automated rendering and dataset export.
+A procedural intersection generator serves as the reference implementation, demonstrating controllable road-junction geometry and variation for targeted scenario generation.
+
+### Technical Highlights
+
+Procedural scenario generation: Configurable intersection geometry and parameters for generating varied road-junction layouts.
+
+Automated data production: Integrated Houdini Engine and Unreal Engine for batch rendering and semantic dataset export, without an intermediate USD-file workflow.
+
+Pipeline reliability: Implemented checkpoint-based recovery, lock-file coordination, and error handling for Houdini Engine failures during rendering.
+
+Downstream ML validation: Connected generated data to a SegFormer semantic-segmentation training and evaluation workflow.
+
+### Results
+
+Best evaluation mIoU: 0.8745
+Semantic classes: 8
+Training images: ~300
+Model: SegFormer nvidia/mit-b1
+
+Demonstration task: Semantic segmentation
+
+The results demonstrate an end-to-end workflow from procedural environment generation to downstream model training and evaluation. The project focuses on controllable scenario generation and data-pipeline integration, rather than claiming state-of-the-art model performance.
+
+### Intended Value
+
+The architecture is designed to make specialised scenario generators easier to connect to a shared data-production workflow, reducing the need to rebuild rendering and export infrastructure for every new scenario type.
 
 ---
 
@@ -234,17 +264,6 @@ The ML stage exists primarily to demonstrate the downstream use of the generated
 This project does **not** claim state-of-the-art model performance.
 
 ---
-## Results
-
-A SegFormer semantic-segmentation model was fine-tuned on the generated synthetic dataset.
-
-mIoU: 0.8745
-Classes: 8
-Training images: ~300
-Model: SegFormer nvidia/mit-b1
-
-The result demonstrates that the generated synthetic data is sufficient for downstream semantic-segmentation training. The metric is included as a pipeline validation result rather than as a state-of-the-art benchmark.
-
 ## Reproducibility
 
 The repository is intended to make the complete workflow **understandable and reasonably reproducible**, rather than provide a completely self-contained one-click environment.
