@@ -1,304 +1,231 @@
-# Synthetic Data Pipeline
+# Synthetic Environment & Data Pipeline
 
-A controllable synthetic-environment and dataset-generation pipeline combining **Houdini, Unreal Engine and Python**.
+**Independent Engineering Project | Houdini · Unreal Engine · Python · SegFormer**
 
-The project generates procedural environments, renders synthetic imagery and semantic masks, exports dataset annotations, and supports downstream semantic-segmentation training and evaluation.
+A procedural synthetic-environment and data-generation pipeline designed to connect specialised scenario generation with automated rendering, semantic dataset export, and downstream model evaluation.
 
----
+The project demonstrates an end-to-end workflow using a controllable procedural intersection generator as its reference implementation.
 
-## Overview
+## Problem
+
+Specialised edge cases often require purpose-built procedural generators. However, generating a scenario is only one part of the workflow: automated rendering, semantic annotation, dataset export, and downstream model evaluation must also be connected.
+
+Building these components separately for each scenario can duplicate engineering effort and require expertise across procedural generation, real-time rendering, automation, and machine learning workflows.
+
+## Approach
+
+Designed a pipeline that separates **scenario generation from downstream data production**.
+
+Developers can create specialised Houdini Digital Assets (HDAs) for configurable scenarios, while a shared workflow connects Houdini Engine with Unreal Engine for automated scene generation, rendering, and dataset export.
+
+A procedural intersection generator serves as the reference implementation, demonstrating configurable road-junction geometry and parameter-driven scene variation.
+
+## Technical Highlights
+
+- **Procedural scenario generation:** Configurable intersection geometry and parameter sampling for generating varied road-junction layouts.
+- **Automated rendering and export:** Integrated Houdini Engine and Unreal Engine to generate synthetic imagery and semantic outputs without an intermediate USD-file workflow.
+- **Pipeline orchestration:** Coordinated independent Python scripts for sample generation, rendering, annotation export, and model evaluation.
+- **Failure handling:** Implemented checkpoint-based recovery, lock-file coordination to help prevent duplicate file writes, and error handling for Houdini Engine failures during rendering.
+- **Downstream ML validation:** Connected generated data to a SegFormer semantic-segmentation training and evaluation workflow.
+
+## Results
+
+A SegFormer model was fine-tuned on the generated synthetic dataset to validate its downstream use for semantic segmentation.
+
+| Metric | Result |
+|---|---|
+| Best evaluation mIoU | **0.8745** |
+| Semantic classes | 8 |
+| Training images | Approximately 300 |
+| Model | `nvidia/mit-b1` |
+
+The result demonstrates an end-to-end workflow from procedural environment generation to semantic dataset creation, model training, and evaluation. It is a pipeline validation result, not a state-of-the-art benchmark or evidence of generalisation to real-world data.
+
+## Pipeline Workflow
 
 ```text
 Houdini Procedural Generation
-            ↓
-       Houdini Engine
-            ↓
-       Unreal Engine
-            ↓
-      Automated Render
-            ↓
-    RGB + Semantic Mask
-            ↓
-        COCO Dataset
-            ↓
-     SegFormer Training
-            ↓
-        Evaluation
+              ↓
+       Parameter Sampling
+              ↓
+         Houdini Engine
+              ↓
+         Unreal Engine
+              ↓
+        Automated Rendering
+              ↓
+       RGB + Semantic Masks
+              ↓
+        COCO Annotations
+              ↓
+       SegFormer Fine-tuning
+              ↓
+      Evaluation & Visualisation
 ```
 
-### Problem
-
-Specialised edge cases often require purpose-built procedural generators. However, generating a scenario is only one part of the workflow: automated rendering, semantic annotation, dataset export, and downstream model evaluation also need to be connected. Rebuilding these components for each new generator can duplicate engineering effort and require expertise across multiple disciplines.
-
-### Approach
-
-Designed an automated synthetic data pipeline that separates scenario generation from downstream data production. Developers can build specialised Houdini Digital Assets (HDAs) for configurable scenarios, while a shared pipeline connects Houdini Engine with Unreal Engine for automated rendering and dataset export.
-A procedural intersection generator serves as the reference implementation, demonstrating controllable road-junction geometry and variation for targeted scenario generation.
-
-### Technical Highlights
-
-Procedural scenario generation: Configurable intersection geometry and parameters for generating varied road-junction layouts.
-
-Automated data production: Integrated Houdini Engine and Unreal Engine for batch rendering and semantic dataset export, without an intermediate USD-file workflow.
-
-Pipeline reliability: Implemented checkpoint-based recovery, lock-file coordination, and error handling for Houdini Engine failures during rendering.
-
-Downstream ML validation: Connected generated data to a SegFormer semantic-segmentation training and evaluation workflow.
-
-### Results
-
-Best evaluation mIoU: 0.8745
-Semantic classes: 8
-Training images: ~300
-Model: SegFormer nvidia/mit-b1
-
-Demonstration task: Semantic segmentation
-
-The results demonstrate an end-to-end workflow from procedural environment generation to downstream model training and evaluation. The project focuses on controllable scenario generation and data-pipeline integration, rather than claiming state-of-the-art model performance.
-
-### Intended Value
-
-The architecture is designed to make specialised scenario generators easier to connect to a shared data-production workflow, reducing the need to rebuild rendering and export infrastructure for every new scenario type.
-
----
+The main orchestration entry point is `pipeline/scripts/orchestra.py`. Individual scripts can also be executed independently where appropriate.
 
 ## Repository Structure
 
 ```text
 SyntheticDataPipeline/
-│
 ├── HDA/
 │   └── Houdini Digital Assets
-│
 ├── pipeline/
 │   └── scripts/
+│       ├── UnrealPython/
 │       ├── orchestra.py
 │       ├── generate_samples.py
+│       ├── ue_bridge.py
+│       ├── rpm.py
 │       ├── coco_generator.py
 │       ├── segformer_finetune.py
 │       ├── segformer_visualise.py
 │       ├── json2jpg.py
-│       ├── rpm.py
-│       ├── ue_bridge.py
 │       ├── check_resources.py
-│       ├── status_check.py
-│       └── UnrealPython/
-│
+│       └── status_check.py
 ├── UnrealProjects/
 │   └── Unreal Engine project
-│
 ├── datasets/
 │   └── job_example_v001.yaml
-│
 ├── PROJECT_STATUS.md
-├── README.md
 ├── requirements.txt
-└── .gitignore
+└── README.md
 ```
-
----
-
-## Pipeline
-
-The main workflow is:
-
-1. Define a dataset-generation job in YAML.
-2. Generate parameterised samples from the configured ranges.
-3. Feed the generated parameters into Unreal / Houdini Engine.
-4. Generate procedural scenes.
-5. Render RGB and semantic outputs.
-6. Convert semantic masks into COCO-style annotations.
-7. Train a SegFormer semantic-segmentation model.
-8. Evaluate the model using mean Intersection over Union (mIoU).
-9. Generate visual comparisons between RGB, ground truth and predictions.
-
-The main orchestration entry point is:
-
-```text
-pipeline/scripts/orchestra.py
-```
-
-Individual scripts can also be executed independently where appropriate.
-
----
 
 ## Sampling
 
-`generate_samples.py` supports several sampling strategies:
+`generate_samples.py` supports multiple sampling strategies:
 
-```text
-grid
-random
-lhs
-sobol
-```
+- `grid`
+- `random`
+- `lhs` — Latin Hypercube Sampling
+- `sobol` — Sobol sequence sampling
 
-The sampling configuration is provided through YAML.
+Sampling parameters are configured through YAML job files. An example configuration is provided at `datasets/job_example_v001.yaml`.
 
-Example:
-
-```text
-datasets/job_example_v001.yaml
-```
-
-The generated dataset does **not** need to live inside the repository. The dataset/output location is derived from the supplied job configuration and can be provided from outside the repository.
-
----
-
-## Unreal Engine Setup
-
-Open the Unreal project and make sure the following plugins are enabled:
-
-1. **Blueprint File Utilities**
-2. **Json Blueprint Utilities**
-
-### Editor Preferences
-
-Go to:
-
-**Edit → Editor Preferences**
-
-Disable:
-
-**Use Less CPU when in Background**
-
-This setting is required for the intended automated pipeline workflow.
-
----
-
-## Unreal Project
-
-The Unreal project provides the rendering and semantic-data generation stage.
-
-It uses:
-
-* Scene Capture
-* Movie Render Queue / automated rendering
-* Custom Stencil / semantic rendering
-* Procedural scene assembly
-* Unreal Python automation
-
-The project also contains the Unreal assets required by the example scene and capture workflow.
-
-### External Assets
-
-Some assets used by the project originate from external Unreal Marketplace downloads and are **not redistributed in this repository**.
-
-The exact vehicle Static Mesh and Material configuration affects the semantic stencil output. When reproducing the example dataset, an equivalent compatible asset/material setup may therefore be required.
-
-Third-party assets remain subject to their original licences.
-
----
-
-## Houdini
-
-The repository includes a Houdini Digital Asset:
-
-```text
-HDA/sop_IntersectGenerator.1.3.hda
-```
-
-The HDA generates controllable procedural intersection environments which are consumed by Unreal Engine through Houdini Engine.
-
-The scene variation is driven by parameters such as road dimensions, intersection configuration and random seeds.
-
----
+Generated datasets can be stored outside the repository. Their output locations are configured for the local environment rather than fixed to the repository directory.
 
 ## Python Pipeline
 
-The Python pipeline is divided into independently executable components:
+| Script | Responsibility |
+|---|---|
+| `orchestra.py` | Main pipeline orchestration |
+| `generate_samples.py` | Parameter sampling and sample generation |
+| `ue_bridge.py` | Unreal communication and pipeline integration |
+| `rpm.py` | Unreal process and render-process management |
+| `coco_generator.py` | Semantic mask conversion to COCO annotations |
+| `segformer_finetune.py` | SegFormer training and evaluation |
+| `segformer_visualise.py` | Prediction and ground-truth visualisation |
+| `json2jpg.py` | Image format conversion |
+| `check_resources.py` | Resource checks |
+| `status_check.py` | Pipeline status handling |
+| `UnrealPython/` | Unreal-side Python utilities |
 
-| Script                   | Purpose                                      |
-| ------------------------ | -------------------------------------------- |
-| `orchestra.py`           | Main pipeline orchestration                  |
-| `generate_samples.py`    | Parameter sampling and sample generation     |
-| `ue_bridge.py`           | Unreal communication / pipeline bridge       |
-| `rpm.py`                 | Unreal process and render-process management |
-| `coco_generator.py`      | Semantic mask → COCO annotations             |
-| `segformer_finetune.py`  | SegFormer training and evaluation            |
-| `segformer_visualise.py` | Prediction / ground-truth visualisation      |
-| `check_resources.py`     | Resource checks                              |
-| `status_check.py`        | Pipeline status handling                     |
-| `UnrealPython/`          | Unreal-side Python utilities                 |
+The components are kept relatively independent so that individual stages can be tested or executed without always running the entire workflow.
 
-The components are intentionally kept relatively independent so that individual stages can be tested or executed without requiring the entire pipeline.
+## Houdini Setup
 
----
+The repository includes the intersection generator HDA:
+
+`HDA/sop_IntersectGenerator.1.3.hda`
+
+The HDA generates controllable procedural road-junction environments consumed by Unreal Engine through Houdini Engine. Scene variation is driven by parameters such as road dimensions, intersection configuration, and random seeds.
+
+A compatible Houdini installation and Houdini Engine for Unreal are required.
+
+## Unreal Engine Setup
+
+The Unreal project provides procedural scene assembly, automated rendering, and semantic-data generation.
+
+The workflow uses:
+
+- Houdini Engine integration
+- Scene Capture
+- Movie Render Queue / automated rendering
+- Custom Stencil for semantic rendering
+- Unreal Python automation
+
+### Required plugins
+
+Ensure the following plugins are enabled:
+
+1. Blueprint File Utilities
+2. Json Blueprint Utilities
+
+### Editor preference
+
+Under **Edit → Editor Preferences**, disable **Use Less CPU when in Background** for the intended automated pipeline workflow.
+
+### External assets
+
+Some example assets originate from external Unreal Marketplace downloads and are not redistributed in this repository.
+
+The exact vehicle Static Mesh and Material configuration affects semantic stencil output. Reproducing the example dataset may therefore require an equivalent compatible asset and material setup.
+
+Third-party assets remain subject to their original licences.
 
 ## Python Environment
 
-Python **3.10+** is recommended.
+Python 3.10+ is recommended.
 
-Install the direct Python dependencies with:
+Install the listed Python dependencies:
 
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-### PyTorch / CUDA
+### PyTorch and CUDA
 
-PyTorch is intentionally not pinned to a specific version in `requirements.txt`.
+PyTorch is not pinned to a specific build in `requirements.txt`, because the appropriate installation depends on the target GPU and CUDA environment.
 
-Install the PyTorch build appropriate for the target NVIDIA / CUDA environment before running the ML stage.
+Install a compatible PyTorch build before running the machine-learning stage.
 
-The Unreal and Houdini stages also depend on their respective application installations and plugins.
+The complete workflow also requires the relevant Houdini and Unreal Engine installations, plugins, and compatible project assets.
 
----
+### Local configuration
+
+Machine-specific configuration is excluded from Git:
+
+`pipeline/scripts/env.yaml`
+
+An example configuration is provided:
+
+`pipeline/scripts/env.example.yaml`
+
+Configure local application paths and other environment-specific settings before running the pipeline.
 
 ## Machine Learning
 
-The generated semantic dataset can be used for semantic-segmentation experiments with **SegFormer**.
+The ML stage demonstrates the downstream use of the generated semantic dataset with SegFormer.
 
-The current implementation:
+The current workflow includes:
 
-* loads RGB images and semantic masks
-* creates a train / validation split
-* fine-tunes `nvidia/mit-b1`
-* calculates mean IoU
-* saves the best model
-* exports training / evaluation metrics
-* generates prediction visualisations
+- Loading RGB images and semantic masks
+- Creating a training / validation split
+- Fine-tuning `nvidia/mit-b1`
+- Calculating mean Intersection over Union (mIoU)
+- Saving the best model
+- Exporting training and evaluation metrics
+- Generating prediction visualisations
 
-The ML stage exists primarily to demonstrate the downstream use of the generated synthetic data.
+The ML stage is intended to validate the integration between synthetic data generation and downstream training and evaluation. The project does not claim state-of-the-art model performance or establish that the generated data generalises to real-world conditions.
 
-This project does **not** claim state-of-the-art model performance.
+## Reproducibility and Generated Data
 
----
-## Reproducibility
+The repository is intended to make the workflow understandable and reasonably reproducible, rather than provide a completely self-contained, one-click environment.
 
-The repository is intended to make the complete workflow **understandable and reasonably reproducible**, rather than provide a completely self-contained one-click environment.
+External dependencies include:
 
-The following external dependencies are required:
+- Houdini
+- Unreal Engine
+- Houdini Engine for Unreal
+- A compatible NVIDIA GPU / CUDA environment for model training
+- External Unreal assets where applicable
 
-* Unreal Engine
-* Houdini
-* Houdini Engine for Unreal
-* NVIDIA GPU / compatible CUDA environment
-* External Unreal Marketplace assets where applicable
+Generated datasets, rendered images, checkpoints, and other large runtime outputs are intentionally excluded from Git.
 
-Generated datasets, renders, checkpoints and other large runtime outputs are intentionally excluded from the repository.
-
-Local environment configuration is also excluded:
-
-```text
-pipeline/scripts/env.yaml
-```
-
-An example configuration is provided as:
-
-```text
-pipeline/scripts/env.example.yaml
-```
-
-This allows machine-specific paths and settings to remain local.
-
----
-
-## Generated Data
-
-Generated datasets are intentionally **not committed** to Git.
-
-Typical generated content includes:
+Typical generated outputs include:
 
 ```text
 rgb/
@@ -309,69 +236,42 @@ runs/
 visualisations/
 ```
 
-These outputs can be generated locally from the pipeline configuration.
+These outputs are generated locally according to the job configuration and pipeline settings.
 
----
+## Scope and Limitations
 
-## Current Scope
+This is a portfolio-scale engineering demonstration of a controllable synthetic-data workflow.
 
-This repository is a portfolio-scale technical demonstration of a controllable synthetic-data workflow.
+**Demonstrated scope:**
 
-It demonstrates:
+- Procedural intersection generation
+- Parameterised scenario sampling
+- Houdini-to-Unreal integration
+- Automated rendering and semantic-data export
+- COCO annotation generation
+- Downstream segmentation training and evaluation
+- Basic pipeline recovery and process-management mechanisms
 
-```text
-Procedural Generation
-        ↓
-Parameter Sampling
-        ↓
-Automated Scene Assembly
-        ↓
-Automated Rendering
-        ↓
-Semantic Dataset Generation
-        ↓
-COCO Annotation
-        ↓
-Model Training
-        ↓
-Evaluation
-```
+**Outside the current scope:**
 
-The project does **not** currently implement closed-loop optimisation in which model evaluation automatically modifies the next sampling distribution.
+- Closed-loop optimisation that automatically changes future sampling distributions based on model evaluation
+- General-purpose world generation
+- Full vehicle, traffic-agent, or robotics physics simulation
+- A validated benchmark of synthetic-to-real generalisation
+- A self-contained environment that removes all external software and asset dependencies
 
-That is intentionally outside the current project scope.
+The pipeline establishes a foundation for connecting specialised scenario generators to a shared data-production workflow. Its practical value for other scenario types would need to be validated by integrating additional generators and measuring the resulting development effort.
 
----
+## Project Status
 
-## Known Limitations
+**Portfolio project — finalised.**
 
-* Unreal Engine and Houdini are external application dependencies.
-* Some example assets are external Marketplace assets and cannot be redistributed.
-* Exact semantic output depends on the configured Unreal assets and materials.
-* GPU / CUDA compatibility affects the ML environment.
-* The ML stage is intended as downstream validation of the synthetic dataset rather than a research benchmark.
-* Generated datasets and training outputs are excluded from Git.
+The repository contains the core procedural generation, Unreal rendering, dataset generation, COCO conversion, and SegFormer evaluation workflow.
 
----
+See `PROJECT_STATUS.md` for additional implementation details and known limitations.
 
-## Status
+## Licence and Third-Party Assets
 
-**Portfolio project — finalised / repository cleanup complete.**
-
-The repository contains the core procedural generation, Unreal rendering, dataset generation, COCO conversion and SegFormer evaluation workflow.
-
-See:
-
-```text
-PROJECT_STATUS.md
-```
-
-for the detailed project status and known limitations.
-
----
-
-## License / External Assets
-
-Code and project files in this repository are provided for portfolio / demonstration purposes unless otherwise stated.
+Code and project files are provided for portfolio and demonstration purposes unless otherwise stated.
 
 Third-party assets remain subject to their respective licences and are not redistributed by this repository.
