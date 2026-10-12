@@ -35,7 +35,7 @@ A SegFormer model was fine-tuned on the generated synthetic dataset to validate 
 | Metric | Result |
 |---|---|
 | Best evaluation mIoU | **0.8745** |
-| Semantic classes | 8 |
+| Semantic classes | 7 |
 | Training images | Approximately 300 |
 | Model | `nvidia/mit-b1` |
 
